@@ -1,0 +1,551 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
+<title>Diário Glicêmico</title></head><body>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style id="css">
+/* Layout: coluna única, mobile primeiro. Fluxo em 3 passos (foto, conferência, relatório), em cartões planos separados por filete.
+   Tom de instrumento clínico: ardósia fria, teal profundo, tipografia de leitura de glicosímetro nos números. */
+:root{
+  --bg:#f1f4f5; --surface:#ffffff; --ink:#16212a; --mute:#586775; --line:#dae1e6;
+  --accent:#0b6b73; --accent-ink:#ffffff; --accent-soft:rgba(11,107,115,.12);
+  --ok:#1b8657; --ok-bg:rgba(27,134,87,.14);
+  --lo:#bf3a2b; --lo2:#76201a; --hi:#d39a22; --hi2:#d1552c;
+  --warn-bg:#fff1d2; --warn-ink:#684700; --dub-bg:rgba(211,154,34,.28);
+  --font:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e1418; --surface:#161e24; --ink:#e5ecf1; --mute:#93a2ae; --line:#26323a;
+    --accent:#4fbfc7; --accent-ink:#04282b; --accent-soft:rgba(79,191,199,.16);
+    --ok:#4cc38a; --ok-bg:rgba(76,195,138,.16);
+    --lo:#ef6a5b; --lo2:#b33a2b; --hi:#f0b94a; --hi2:#f07f55;
+    --warn-bg:#3a2f14; --warn-ink:#f1d28a; --dub-bg:rgba(240,185,74,.30);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0e1418; --surface:#161e24; --ink:#e5ecf1; --mute:#93a2ae; --line:#26323a;
+  --accent:#4fbfc7; --accent-ink:#04282b; --accent-soft:rgba(79,191,199,.16);
+  --ok:#4cc38a; --ok-bg:rgba(76,195,138,.16);
+  --lo:#ef6a5b; --lo2:#b33a2b; --hi:#f0b94a; --hi2:#f07f55;
+  --warn-bg:#3a2f14; --warn-ink:#f1d28a; --dub-bg:rgba(240,185,74,.30);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.5}
+.wrap{max-width:720px;margin:0 auto;padding-inline:16px;padding-block:20px 48px;display:flex;flex-direction:column;gap:14px}
+h1{font-size:24px;line-height:1.2;margin:0;font-weight:600;letter-spacing:-.01em}
+h2{font-size:16px;margin:0 0 10px;font-weight:600;display:flex;align-items:center;gap:8px}
+.lede{margin:4px 0 0;color:var(--mute);font-size:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;min-width:0}
+.step{font-family:var(--mono);font-size:12px;font-weight:500;width:22px;height:22px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:inline-flex;align-items:center;justify-content:center;flex:none}
+.warn{background:var(--warn-bg);color:var(--warn-ink);border-radius:8px;padding:10px 12px;font-size:13px;margin-bottom:12px}
+.pick{display:flex;align-items:center;justify-content:center;gap:8px;border:1.5px dashed var(--accent);color:var(--accent);border-radius:10px;padding:16px;font-weight:600;cursor:pointer;text-align:center}
+.pick:focus-within{outline:2px solid var(--accent);outline-offset:2px}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+#prev{display:none;width:100%;max-height:200px;object-fit:contain;border-radius:8px;border:1px solid var(--line);margin-top:10px;background:var(--bg)}
+.row{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+.row>div{flex:1 1 130px;min-width:0}
+label{display:block;font-size:12px;color:var(--mute);margin-bottom:3px}
+input.f,select.f{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit;font-size:16px;min-width:0}
+button{font:inherit;font-size:15px;padding:10px 14px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;min-height:44px}
+button.pri{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+button:disabled{opacity:.5;cursor:not-allowed}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.status{margin-top:10px;font-size:13px;color:var(--mute);min-height:20px}
+.status.err{color:var(--lo)}
+.small{font-size:12px;color:var(--mute)}
+.grid{display:grid;grid-template-columns:34px repeat(5,minmax(0,1fr));gap:4px;align-items:center}
+.grid .h{font-size:11px;color:var(--mute);text-align:center;font-weight:500}
+.grid .d{font-family:var(--mono);font-size:12px;color:var(--mute);text-align:center}
+.grid input{width:100%;padding:7px 2px;text-align:center;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font-family:var(--mono);font-size:15px;min-width:0}
+.grid input.dub{background:var(--dub-bg);border-color:var(--hi)}
+.grid input.ed{border-color:var(--accent);background:var(--accent-soft)}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--mute);margin:0 0 10px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:8px}
+.kpi{border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.kpi b{display:block;font-family:var(--mono);font-size:20px;font-weight:500;line-height:1.25}
+.kpi span{font-size:11.5px;color:var(--mute)}
+.stack{display:flex;height:30px;border-radius:6px;overflow:hidden;margin:12px 0 6px}
+.stack div{display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:12px;color:#fff;font-weight:500;min-width:0}
+.leg2{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--mute)}
+.leg2 i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+.tw{overflow-x:auto;margin-top:10px}
+table{border-collapse:collapse;width:100%}
+th,td{padding:6px 8px;text-align:left;border-bottom:1px solid var(--line);font-size:13.5px;white-space:nowrap}
+th{font-size:11.5px;color:var(--mute);font-weight:500}
+td.n{font-family:var(--mono);text-align:right}
+th.n{text-align:right}
+.badge{display:inline-block;padding:1px 8px;border-radius:99px;font-size:12px;font-weight:600}
+.b-ok{background:var(--ok-bg);color:var(--ok)}
+.b-bad{background:rgba(191,58,43,.14);color:var(--lo)}
+h3{font-size:14px;margin:18px 0 6px;font-weight:600}
+ul.flags{margin:6px 0 0;padding-left:18px;font-size:14px}
+.empty{color:var(--mute);font-size:14px;padding:6px 0}
+.note{font-size:12px;color:var(--mute);margin:14px 0 0}
+details.hrs{margin-top:8px;font-size:13px}
+details.hrs summary{cursor:pointer;color:var(--accent);min-height:28px}
+.hrs .row{margin-top:6px}
+.hrs .row>div{flex:1 1 56px}
+svg text{fill:var(--mute);font-family:var(--font)}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style>
+
+<main class="wrap">
+  <header>
+    <h1>Diário Glicêmico</h1>
+    <p class="lede">Fotografe o diário em papel, confira a leitura e gere o relatório glicêmico adaptado do AGP.</p>
+  </header>
+
+  <section class="card" aria-labelledby="t1">
+    <h2 id="t1"><span class="step">1</span>Foto do diário</h2>
+    <div class="warn">A foto é enviada por conexão segura ao servidor deste app e à API da Anthropic (Claude) só para a leitura. O app não guarda a imagem. Cubra nome, prontuário e data de nascimento antes de fotografar.</div>
+
+    <label class="pick" for="foto">Fotografar ou escolher imagem</label>
+    <input class="vh" id="foto" type="file" accept="image/*">
+    <img id="prev" alt="Pré-visualização da foto do diário">
+
+    <div class="row">
+      <div><label for="cod">Código do paciente</label><input class="f" id="cod" value="P001" maxlength="20" autocomplete="off"></div>
+      <div><label for="mes">Mês do diário</label><input class="f" id="mes" placeholder="MM/AAAA" maxlength="12" autocomplete="off"></div>
+      <div><label for="a1c">HbA1c (%), opcional</label><input class="f" id="a1c" inputmode="decimal" placeholder="ex.: 8,9" maxlength="5" autocomplete="off"></div>
+    </div>
+    <div class="row">
+      <div style="flex-basis:100%"><label for="modo">Modo de leitura</label>
+        <select class="f" id="modo">
+          <option value="default">Padrão</option>
+          <option value="complex">Cuidadoso (mais lento, para letra difícil)</option>
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <div style="flex-basis:100%"><label for="acesso">Código de acesso</label><input class="f" id="acesso" type="password" autocomplete="off" maxlength="64" placeholder="fornecido pelo pesquisador"></div>
+    </div>
+    <div class="actions">
+      <button class="pri" id="ler" type="button" disabled>Ler diário</button>
+      <button id="parar" type="button" hidden>Parar</button>
+      <button id="exemplo" type="button">Ver exemplo fictício</button>
+    </div>
+    <div class="status" id="status" role="status" aria-live="polite">Escolha uma foto e digite o código de acesso, ou digite os valores direto na grade abaixo.</div>
+  </section>
+
+  <section class="card" aria-labelledby="t2">
+    <h2 id="t2"><span class="step">2</span>Conferir leitura</h2>
+    <p class="legend"><span><i style="background:var(--dub-bg);border:1px solid var(--hi)"></i>dúvida da leitura</span><span><i style="background:var(--accent-soft);border:1px solid var(--accent)"></i>corrigido por você</span></p>
+    <div class="grid" id="grid"></div>
+    <p class="small" id="dubinfo" style="margin:10px 0 0"></p>
+  </section>
+
+  <section class="card" id="report" aria-labelledby="t3">
+    <h2 id="t3"><span class="step">3</span>Relatório <span class="small" id="ident"></span></h2>
+    <div id="rep-a"></div>
+    <div id="rep-agp"></div>
+    <details class="hrs noexport">
+      <summary>Ajustar horários nominais dos períodos</summary>
+      <div class="row" id="horas"></div>
+    </details>
+    <div id="rep-b"></div>
+    <p class="note">Relatório inspirado no AGP, adaptado a glicemias capilares pontuais. Usa "% de medições" e não "tempo no alvo" (TIR), pois não há registro contínuo. eHbA1c e eAG são estimativas a partir da média capilar.</p>
+  </section>
+
+  <section class="card" aria-labelledby="t4">
+    <h2 id="t4"><span class="step">4</span>Exportar</h2>
+    <div class="actions" style="margin-top:0">
+      <button class="pri" id="csv" type="button">Baixar CSV</button>
+      <button id="htm" type="button">Baixar relatório</button>
+    </div>
+    <div class="status" id="expstatus" role="status" aria-live="polite"></div>
+  </section>
+</main>
+
+<script>
+const PERIODS = ['Café','Almoço','Lanche','Jantar','Ceia'];
+const NOM_H = [7,12,16,19,22];
+const N = 31;
+const $ = id => document.getElementById(id);
+
+let orig = null;                       // leitura inicial (null = digitado ou exemplo)
+let cur = Array.from({length:N},()=>[null,null,null,null,null]);
+let dub = new Set();                   // células em dúvida ("dia,período")
+let source = 'manual';
+let file = null, ctl = null;
+let tReadStart = null, tReadSec = null, tReadEnd = null;
+
+const f0 = v => Number.isFinite(v) ? Math.round(v).toLocaleString('pt-BR') : '–';
+const f1 = v => Number.isFinite(v) ? v.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1}) : '–';
+
+// ---------- cálculo ----------
+function quantile(sorted,q){
+  if(!sorted.length) return NaN;
+  const pos=(sorted.length-1)*q, lo=Math.floor(pos), hi=Math.ceil(pos);
+  return sorted[lo]+(sorted[hi]-sorted[lo])*(pos-lo);
+}
+function summarize(vals){
+  const n=vals.length; if(!n) return {n:0};
+  const s=[...vals].sort((a,b)=>a-b);
+  const mean=vals.reduce((a,b)=>a+b,0)/n;
+  const sd=n>1?Math.sqrt(vals.reduce((a,b)=>a+(b-mean)**2,0)/(n-1)):0;
+  const pct=f=>100*vals.filter(f).length/n;
+  return {n,mean,sd,cv:mean?100*sd/mean:NaN,median:quantile(s,.5),min:s[0],max:s[n-1],
+    p5:quantile(s,.05),p25:quantile(s,.25),p75:quantile(s,.75),p95:quantile(s,.95),
+    lt54:pct(v=>v<54),lt70:pct(v=>v<70),b54_69:pct(v=>v>=54&&v<70),
+    target:pct(v=>v>=70&&v<=180),gt180:pct(v=>v>180),gt250:pct(v=>v>250),b181_250:pct(v=>v>180&&v<=250)};
+}
+const allValues = d => d.flat().filter(v=>v!=null);
+const periodValues = (d,p) => d.map(r=>r[p]).filter(v=>v!=null);
+const eAG = a => 28.7*a-46.7;
+const eA1c = m => (m+46.7)/28.7;
+
+// ---------- grade ----------
+const grid = $('grid');
+grid.insertAdjacentHTML('beforeend','<div></div>'+PERIODS.map(p=>'<div class="h">'+p+'</div>').join(''));
+const cells = [];
+for(let d=0; d<N; d++){
+  const lab=document.createElement('div'); lab.className='d'; lab.textContent=d+1; grid.appendChild(lab);
+  cells[d]=[];
+  for(let p=0;p<5;p++){
+    const inp=document.createElement('input');
+    inp.type='text'; inp.inputMode='numeric'; inp.maxLength=3; inp.autocomplete='off';
+    inp.id='c'+d+'_'+p; inp.setAttribute('aria-label','Dia '+(d+1)+', '+PERIODS[p]);
+    inp.addEventListener('input',()=>{
+      const raw=inp.value.replace(/\D/g,'');
+      if(raw!==inp.value) inp.value=raw;
+      const v=raw===''?null:parseInt(raw,10);
+      cur[d][p]=Number.isFinite(v)?v:null;
+      dub.delete(d+','+p);
+      paintCell(d,p); render();
+    });
+    grid.appendChild(inp); cells[d][p]=inp;
+  }
+}
+function paintCell(d,p){
+  const el=cells[d][p];
+  el.classList.toggle('dub',dub.has(d+','+p));
+  el.classList.toggle('ed',!!orig && orig[d][p]!==cur[d][p]);
+}
+function syncGrid(){
+  for(let d=0;d<N;d++) for(let p=0;p<5;p++){ cells[d][p].value=cur[d][p]==null?'':cur[d][p]; paintCell(d,p); }
+}
+
+// ---------- horários nominais ----------
+$('horas').innerHTML = PERIODS.map((nm,i)=>'<div><label for="h'+i+'">'+nm+'</label><input class="f" id="h'+i+'" inputmode="decimal" value="'+NOM_H[i]+'" maxlength="4"></div>').join('');
+PERIODS.forEach((_,i)=>$('h'+i).addEventListener('input',()=>{
+  const v=parseFloat(String($('h'+i).value).replace(',','.'));
+  if(Number.isFinite(v)&&v>=0&&v<24) NOM_H[i]=v;
+  render();
+}));
+
+// ---------- AGP adaptado ----------
+function catmull(p0,p1,p2,p3,t){return 0.5*((2*p1)+(-p0+p2)*t+(2*p0-5*p1+4*p2-p3)*t*t+(-p0+3*p1-3*p2+p3)*t*t*t);}
+function periodicCurve(hours,ys,step){
+  const n=hours.length,H=[],Y=[];
+  for(let i=-2;i<n+2;i++){const k=((i%n)+n)%n,off=Math.floor(i/n)*24;H.push(hours[k]+off);Y.push(ys[k]);}
+  const out=[];
+  for(let h=0;h<=24+1e-9;h+=step){
+    let j=1; while(j<H.length-3&&!(H[j]<=h&&h<=H[j+1])) j++;
+    const t=(h-H[j])/(H[j+1]-H[j]);
+    out.push([h,Math.max(20,catmull(Y[j-1],Y[j],Y[j+1],Y[j+2],t))]);
+  }
+  return out;
+}
+function agpSvg(per){
+  const ok=per.map((x,i)=>({i,x})).filter(o=>o.x.S.n>0);
+  const hrs=ok.map(o=>NOM_H[o.i]);
+  const asc=hrs.every((h,k)=>k===0||h>hrs[k-1])&&hrs[hrs.length-1]-hrs[0]<24;
+  if(ok.length<3||!asc) return '<p class="empty">'+(ok.length<3?'O AGP precisa de dados em ao menos 3 períodos.':'Os horários nominais devem crescer de café a ceia.')+'</p>';
+  const W=420,Ht=310,L=34,R=8,T=22,B=30;
+  const maxV=Math.max(300,...ok.map(o=>o.x.S.max));
+  const yMax=Math.ceil((maxV+20)/50)*50;
+  const x=h=>L+(W-L-R)*h/24, y=v=>T+(Ht-T-B)*(1-v/yMax);
+  const C={}; ['p5','p25','median','p75','p95'].forEach(k=>{C[k]=periodicCurve(hrs,ok.map(o=>o.x.S[k]),.25);});
+  const pt=p=>x(p[0]).toFixed(1)+' '+y(p[1]).toFixed(1);
+  const line=pts=>pts.map((p,k)=>(k?'L':'M')+pt(p)).join(' ');
+  const band=(lo,hi)=>line(C[hi])+' '+C[lo].slice().reverse().map(p=>'L'+pt(p)).join(' ')+' Z';
+  let s='<svg viewBox="0 0 '+W+' '+Ht+'" width="100%" role="img" aria-label="AGP adaptado: perfil glicêmico em 24 horas">';
+  s+='<rect x="'+L+'" y="'+y(180)+'" width="'+(W-L-R)+'" height="'+(y(70)-y(180))+'" fill="var(--ok-bg)"/>';
+  for(let v=0;v<=yMax;v+=50){
+    s+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+y(v)+'" y2="'+y(v)+'" stroke="var(--line)"/>';
+    s+='<text x="'+(L-5)+'" y="'+(y(v)+4)+'" text-anchor="end" font-size="10.5">'+v+'</text>';
+  }
+  for(let h=0;h<=24;h+=3){
+    s+='<line x1="'+x(h)+'" x2="'+x(h)+'" y1="'+T+'" y2="'+(Ht-B)+'" stroke="var(--line)" stroke-dasharray="2 3"/>';
+    s+='<text x="'+x(h)+'" y="'+(Ht-B+15)+'" text-anchor="middle" font-size="10.5">'+String(h).padStart(2,'0')+'h</text>';
+  }
+  [[54,'var(--lo)'],[70,'var(--ok)'],[180,'var(--ok)'],[250,'var(--hi2)']].forEach(l=>{
+    s+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+y(l[0])+'" y2="'+y(l[0])+'" stroke="'+l[1]+'" stroke-width="1" stroke-dasharray="5 3"/>';
+  });
+  s+='<path d="'+band('p5','p95')+'" fill="var(--accent)" fill-opacity=".14"/>';
+  s+='<path d="'+band('p25','p75')+'" fill="var(--accent)" fill-opacity=".30"/>';
+  s+='<path d="'+line(C.median)+'" fill="none" stroke="var(--accent)" stroke-width="2.6" stroke-linejoin="round"/>';
+  ok.forEach(o=>o.x.v.forEach((v,k)=>{
+    const jx=((k*37)%21-10)/10*.5;
+    s+='<circle cx="'+x(NOM_H[o.i]+jx).toFixed(1)+'" cy="'+y(v).toFixed(1)+'" r="1.9" fill="var(--ink)" fill-opacity=".35"/>';
+  }));
+  ok.forEach(o=>{s+='<text x="'+x(NOM_H[o.i])+'" y="'+(T-8)+'" text-anchor="middle" font-size="10.5">'+o.x.nm+'</text>';});
+  s+='</svg>';
+  return s;
+}
+
+// ---------- relatório ----------
+function render(){
+  const S=summarize(allValues(cur));
+  const cod=$('cod').value.trim(), mes=$('mes').value.trim();
+  $('ident').textContent=[cod,mes].filter(Boolean).join(' · ');
+  if(!S.n){
+    $('rep-a').innerHTML='<p class="empty">O relatório aparece aqui assim que houver medições. Leia uma foto, digite os valores na grade ou veja o exemplo fictício.</p>';
+    $('rep-agp').innerHTML=''; $('rep-b').innerHTML=''; renderDubInfo(); return;
+  }
+  const kp=[[f0(S.mean),'Média (mg/dL)'],[f0(S.median),'Mediana (mg/dL)'],[f0(S.min)+'–'+f0(S.max),'Menor–maior'],
+    [f0(S.sd),'Desvio-padrão'],[f1(S.cv)+'%','Coef. de variação'],[f1(eA1c(S.mean))+'%','eHbA1c pela média'],[String(S.n),'Medições']];
+  const dias=cur.filter(r=>r.some(v=>v!=null)).length, comp=cur.filter(r=>r.every(v=>v!=null)).length;
+  const segs=[[S.lt54,'var(--lo2)','<54'],[S.b54_69,'var(--lo)','54–69'],[S.target,'var(--ok)','70–180'],[S.b181_250,'var(--hi)','181–250'],[S.gt250,'var(--hi2)','>250']];
+  const row=(nm,val,meta,ok)=>'<tr><td>'+nm+'</td><td class="n">'+val+'</td><td>'+meta+'</td><td><span class="badge '+(ok?'b-ok">Na meta':'b-bad">Fora da meta')+'</span></td></tr>';
+  $('rep-a').innerHTML=
+    (source==='exemplo'?'<div class="warn">Dados fictícios de exemplo, gerados só para demonstrar o relatório.</div>':'')+
+    '<div class="kpis">'+kp.map(k=>'<div class="kpi"><b>'+k[0]+'</b><span>'+k[1]+'</span></div>').join('')+'</div>'+
+    '<p class="small" style="margin:8px 0 0">'+dias+' dias com registro ('+comp+' com os 5 períodos). '+(dias>=14?'Atinge':'Abaixo d')+(dias>=14?' o mínimo de 14 dias.':'o mínimo de 14 dias.')+'</p>'+
+    '<div class="stack" role="img" aria-label="Distribuição das medições por faixa">'+segs.map(s=>s[0]>0?'<div style="width:'+s[0]+'%;background:'+s[1]+'" title="'+s[2]+': '+f1(s[0])+'%">'+(s[0]>=8?f0(s[0])+'%':'')+'</div>':'').join('')+'</div>'+
+    '<div class="leg2">'+segs.map(s=>'<span><i style="background:'+s[1]+'"></i>'+s[2]+': '+f1(s[0])+'%</span>').join('')+'</div>'+
+    '<div class="tw"><table><thead><tr><th>Indicador</th><th class="n">Resultado</th><th>Meta</th><th>Situação</th></tr></thead><tbody>'+
+      row('% no alvo (70–180)',f1(S.target)+'%','≥ 70%',S.target>=70)+
+      row('% abaixo de 70',f1(S.lt70)+'%','< 4%',S.lt70<4)+
+      row('% abaixo de 54',f1(S.lt54)+'%','< 1%',S.lt54<1)+
+      row('% acima de 180',f1(S.gt180)+'%','< 25%',S.gt180<25)+
+      row('% acima de 250',f1(S.gt250)+'%','< 5%',S.gt250<5)+
+      row('Coef. de variação',f1(S.cv)+'%','< 36%',S.cv<36)+
+    '</tbody></table></div>';
+
+  const per=PERIODS.map((nm,p)=>({nm,v:periodValues(cur,p),S:summarize(periodValues(cur,p))}));
+  $('rep-agp').innerHTML='<h3>Perfil glicêmico ambulatorial (AGP adaptado)</h3>'+agpSvg(per)+
+    '<p class="small" style="margin:6px 0 0">Linha: mediana. Faixa escura: percentis 25–75. Faixa clara: percentis 5–95. Pontos: cada medição. Faixa verde: 70–180 mg/dL. O diário não registra horário, então cada período foi posto em um horário nominal ('+PERIODS.map((n,i)=>n+' '+NOM_H[i]+'h').join(', ')+') e as curvas são interpoladas entre eles. Com poucas medições por período, os percentis são aproximados.</p>';
+
+  const a=parseFloat(String($('a1c').value).replace(',','.'));
+  let compat;
+  if(Number.isFinite(a)&&a>0){
+    const eag=eAG(a), diff=100*(S.mean-eag)/eag, ok=Math.abs(diff)<=30;
+    compat='<div class="tw"><table><tbody>'+
+      '<tr><td>HbA1c informada</td><td class="n">'+f1(a)+'%</td></tr>'+
+      '<tr><td>Glicemia média estimada</td><td class="n">'+f0(eag)+' mg/dL</td></tr>'+
+      '<tr><td>Média capilar do diário</td><td class="n">'+f0(S.mean)+' mg/dL</td></tr>'+
+      '<tr><td>Diferença relativa</td><td class="n">'+(diff>=0?'+':'')+f1(diff)+'%</td></tr>'+
+      '<tr><td>Critério (até 30%)</td><td><span class="badge '+(ok?'b-ok">Compatível':'b-bad">Incompatível')+'</span></td></tr></tbody></table></div>';
+  } else compat='<p class="empty">Informe a HbA1c no passo 1 para checar a compatibilidade. A média deste diário corresponde a uma eHbA1c de '+f1(eA1c(S.mean))+'%.</p>';
+
+  const flags=[];
+  per.forEach(x=>{
+    if(!x.S.n) return;
+    if(x.S.lt54>0) flags.push('<b>'+x.nm+'</b>: há leitura(s) abaixo de 54 mg/dL.');
+    else if(x.S.lt70>0) flags.push('<b>'+x.nm+'</b>: '+f0(x.S.lt70)+'% das medições abaixo de 70 mg/dL.');
+    if(x.S.gt250>=30) flags.push('<b>'+x.nm+'</b>: '+f0(x.S.gt250)+'% das medições acima de 250 mg/dL.');
+    else if(x.S.gt180>=50) flags.push('<b>'+x.nm+'</b>: '+f0(x.S.gt180)+'% das medições acima de 180 mg/dL.');
+  });
+  if(!flags.length) flags.push('Nenhum período sinalizado pelas regras atuais.');
+
+  $('rep-b').innerHTML=
+    '<h3>Por período do dia</h3><div class="tw"><table><thead><tr><th>Período</th><th class="n">n</th><th class="n">Média</th><th class="n">Mediana</th><th class="n">%&lt;70</th><th class="n">%&gt;180</th><th class="n">%&gt;250</th></tr></thead><tbody>'+
+    per.map(x=>x.S.n?'<tr><td>'+x.nm+'</td><td class="n">'+x.S.n+'</td><td class="n">'+f0(x.S.mean)+'</td><td class="n">'+f0(x.S.median)+'</td><td class="n">'+f1(x.S.lt70)+'</td><td class="n">'+f1(x.S.gt180)+'</td><td class="n">'+f1(x.S.gt250)+'</td></tr>':'<tr><td>'+x.nm+'</td><td colspan="6" class="small">sem dados</td></tr>').join('')+
+    '</tbody></table></div>'+
+    '<h3>Compatibilidade com a HbA1c</h3>'+compat+
+    '<h3>Sinalizações descritivas</h3><ul class="flags">'+flags.map(t=>'<li>'+t+'</li>').join('')+'</ul>'+
+    '<p class="small" style="margin:6px 0 0">Regras descritivas sobre os dados do diário, sem sugestão de conduta.</p>'+
+    '<h3>Qualidade da extração</h3>'+qualHtml();
+  renderDubInfo();
+}
+function counts(){
+  let base=0,mudou=0;
+  if(orig) for(let d=0;d<N;d++) for(let p=0;p<5;p++){ if(orig[d][p]!=null) base++; if(orig[d][p]!==cur[d][p]) mudou++; }
+  return {base,mudou};
+}
+function qualHtml(){
+  if(!orig) return '<p class="empty">'+(source==='exemplo'?'Exemplo fictício: sem leitura automática.':'Valores digitados manualmente: sem leitura automática nesta sessão.')+'</p>';
+  const {base,mudou}=counts();
+  const acc=base?100*(1-mudou/base):NaN;
+  return '<div class="tw"><table><tbody>'+
+    '<tr><td>Valores lidos pela IA</td><td class="n">'+base+'</td></tr>'+
+    '<tr><td>Células corrigidas na conferência</td><td class="n">'+mudou+'</td></tr>'+
+    '<tr><td>Concordância leitura × revisão</td><td class="n">'+f1(acc)+'%</td></tr>'+
+    '<tr><td>Tempo de leitura pela IA</td><td class="n">'+(tReadSec!=null?tReadSec+' s':'–')+'</td></tr>'+
+    '</tbody></table></div>';
+}
+function renderDubInfo(){
+  $('dubinfo').textContent = orig ? (dub.size? dub.size+' célula(s) marcadas como dúvida na leitura. Confira no papel e corrija se preciso.' : 'Nenhuma célula em dúvida pendente.') : '';
+}
+
+// ---------- foto e leitura ----------
+const PROMPT = [
+'Você recebe fotos de UM diário de glicemias capilares manuscrito: uma tabela "TABELA DE GLICEMIAS" com uma linha por dia (1 a 31) e as colunas CAFÉ, ALMOÇO, LANCHE, JANTAR, CEIA e OBSERVAÇÕES.',
+'Se houver mais de uma imagem, a primeira mostra a página inteira e as demais são recortes ampliados da parte superior e da parte inferior da mesma página (com sobreposição no meio). Use os recortes para ler os dígitos com precisão e a imagem inteira para conferir a linha de cada dia.',
+'Tarefa: transcrever os valores numéricos de glicemia (mg/dL) escritos à mão, dia por dia.',
+'Regras:',
+'- Ignore círculos desenhados em volta dos números: não fazem parte do valor.',
+'- Se um número foi escrito por cima de outro (rasura), leia o valor mais provável e inclua a célula em "duvidas".',
+'- Célula vazia é null. Não invente valores nem preencha dias em branco.',
+'- Valores plausíveis ficam entre 20 e 600. Se um dígito for ambíguo (como 1 e 7, 3 e 8, 0 e 6), dê o melhor palpite e inclua a célula em "duvidas".',
+'- Ignore nomes, assinaturas, observações e qualquer dado de identificação: não os transcreva.',
+'Responda SOMENTE com JSON neste formato:',
+'{"mes":"MM/AAAA ou null","linhas":[[cafe,almoco,lanche,jantar,ceia],...],"duvidas":[[dia,periodo],...]}',
+'"linhas" tem uma lista por dia, a partir do dia 1, até o último dia que tenha algum valor. Em "duvidas", dia vai de 1 a 31 e periodo de 0 (café) a 4 (ceia).'
+].join('\n');
+
+const ERR = {
+  bad_code:'Código de acesso incorreto. Confira com o pesquisador.',
+  rate_limited:'Limite de uso atingido. Aguarde um pouco e tente de novo.',
+  too_large:'A imagem ficou grande demais. Tente uma foto com menos resolução.',
+  image_rejected:'Não consegui usar essa imagem. Tente outra foto (JPG ou PNG).',
+  refused:'A leitura foi recusada para esta imagem. Tente outra foto.',
+  empty_completion:'Não veio resposta. Tente de novo, com a foto mais nítida.',
+  invalid_json:'A resposta veio fora do formato. Tente de novo, de preferência no modo cuidadoso.',
+  server_not_configured:'O servidor ainda não foi configurado. Avise o pesquisador.',
+  server_key_invalid:'A chave do servidor não foi aceita. Avise o pesquisador.',
+  offline:'Sem conexão com a internet. Verifique o sinal e tente de novo.',
+  upstream_error:'Falha temporária na conexão. Tente de novo.'
+};
+
+try{ $('acesso').value = localStorage.getItem('dg_code') || ''; }catch(e){}
+function podeLer(){ return !!(file && $('acesso').value.trim()); }
+$('acesso').addEventListener('input',()=>{ $('ler').disabled=!podeLer(); });
+
+$('foto').addEventListener('change',()=>{
+  file = $('foto').files[0] || null;
+  const img=$('prev');
+  if(file){ img.src=URL.createObjectURL(file); img.style.display='block'; $('status').textContent='Foto pronta. Digite o código de acesso e toque em "Ler diário".'; }
+  else img.style.display='none';
+  $('ler').disabled = !podeLer();
+});
+
+function blobToB64(blob){
+  return new Promise((ok,no)=>{ const r=new FileReader(); r.onload=()=>ok(String(r.result).split(',')[1]); r.onerror=no; r.readAsDataURL(blob); });
+}
+function toJpeg(bmp,sx,sy,sw,sh,maxSide,q){
+  const k=Math.min(1,maxSide/Math.max(sw,sh));
+  const c=document.createElement('canvas'); c.width=Math.round(sw*k); c.height=Math.round(sh*k);
+  c.getContext('2d').drawImage(bmp,sx,sy,sw,sh,0,0,c.width,c.height);
+  return new Promise(r=>c.toBlob(r,'image/jpeg',q));
+}
+async function makeImages(f){
+  // Página inteira + dois recortes (topo e base). Se o total ficar grande demais
+  // para o limite do servidor (~4,5 MB), reduz resolução e qualidade e tenta de novo.
+  let bmp;
+  try{ bmp=await createImageBitmap(f,{imageOrientation:'from-image'}); }
+  catch(e){ bmp=await createImageBitmap(f); }
+  const W=bmp.width,H=bmp.height;
+  const y1=Math.round(H*.56), y2=Math.round(H*.44);
+  let out=[];
+  for(const [side,q] of [[1600,.84],[1400,.72],[1200,.62],[1000,.55]]){
+    const blobs=[await toJpeg(bmp,0,0,W,H,side,q),await toJpeg(bmp,0,0,W,y1,side,q),await toJpeg(bmp,0,y2,W,H-y2,side,q)].filter(Boolean);
+    out=[]; for(const b of blobs) out.push(await blobToB64(b));
+    if(out.reduce((n,x)=>n+x.length,0)<=3300000) break;
+  }
+  return out;
+}
+
+function busy(on){ $('ler').disabled=on||!podeLer(); $('parar').hidden=!on; $('foto').disabled=on; $('exemplo').disabled=on; }
+
+async function chamarServidor(images,signal){
+  let r;
+  try{
+    r=await fetch('/api/ler',{method:'POST',headers:{'content-type':'application/json'},signal,
+      body:JSON.stringify({images,modo:$('modo').value,code:$('acesso').value.trim()})});
+  }catch(e){
+    if(e&&e.name==='AbortError'){ const x=new Error('cancelled'); x.code='cancelled'; throw x; }
+    const x=new Error('offline'); x.code=navigator.onLine===false?'offline':'upstream_error'; throw x;
+  }
+  let j=null; try{ j=await r.json(); }catch(e){}
+  if(!r.ok){ const x=new Error('http'); x.code=(j&&j.error)||(r.status===413?'too_large':'upstream_error'); throw x; }
+  return j;
+}
+
+$('ler').addEventListener('click',async()=>{
+  if(!podeLer()) return;
+  ctl=new AbortController(); busy(true);
+  $('status').className='status'; $('status').textContent='Preparando as imagens…';
+  tReadStart=Date.now();
+  try{
+    const images=await makeImages(file);
+    $('status').textContent='Lendo o diário. Pode levar de 20 s a 2 min.';
+    const data=await chamarServidor(images,ctl.signal);
+    try{ localStorage.setItem('dg_code',$('acesso').value.trim()); }catch(e){}
+    applyRead(data);
+    tReadEnd=Date.now(); tReadSec=Math.round((tReadEnd-tReadStart)/1000);
+    const n=allValues(cur).length;
+    $('status').textContent='Leitura concluída em '+tReadSec+' s: '+n+' valores, '+dub.size+' em dúvida. Confira a grade no passo 2.';
+    render();
+    $('t2').scrollIntoView({behavior:'smooth',block:'start'});
+  }catch(e){
+    $('status').className='status err';
+    $('status').textContent = e?.code==='cancelled' ? 'Leitura interrompida.' : (ERR[e?.code]||ERR.upstream_error);
+  }finally{ busy(false); ctl=null; }
+});
+$('parar').addEventListener('click',()=>ctl?.abort());
+
+function applyRead(data){
+  const rows=Array.isArray(data?.linhas)?data.linhas:[];
+  orig=Array.from({length:N},(_,d)=>{
+    const r=Array.isArray(rows[d])?rows[d]:[];
+    return [0,1,2,3,4].map(p=>{ const v=r[p]==null?NaN:Number(r[p]); return Number.isFinite(v)&&v>=20&&v<=600?Math.round(v):null; });
+  });
+  cur=orig.map(r=>[...r]); dub=new Set(); source='foto';
+  (Array.isArray(data?.duvidas)?data.duvidas:[]).forEach(x=>{
+    const d=Number(x?.[0])-1,p=Number(x?.[1]);
+    if(d>=0&&d<N&&p>=0&&p<5&&orig[d][p]!=null) dub.add(d+','+p);
+  });
+  if(typeof data?.mes==='string'&&/^[\d\/\-. ]{4,12}$/.test(data.mes)) $('mes').value=data.mes.trim();
+  syncGrid();
+}
+
+$('exemplo').addEventListener('click',()=>{
+  let s=7; const r=()=>(s=(s*1664525+1013904223)%4294967296)/4294967296;
+  const mu=[165,190,155,150,140];
+  orig=null; dub=new Set(); source='exemplo';
+  cur=Array.from({length:N},(_,d)=>d<16?mu.map(m=>Math.max(52,Math.min(420,Math.round(m*(.55+r()*1.1))))):[null,null,null,null,null]);
+  $('cod').value='EXEMPLO'; $('mes').value='';
+  syncGrid(); render();
+  $('status').textContent='Exemplo fictício carregado. Substitua pelos dados do paciente lendo uma foto.';
+});
+
+// ---------- exportação ----------
+async function saveFile(filename,data){
+  const out=$('expstatus'); out.className='status';
+  if(!allValues(cur).length){ out.className='status err'; out.textContent='Não há medições para exportar.'; return; }
+  try{
+    const type=filename.endsWith('.csv')?'text/csv;charset=utf-8':'text/html;charset=utf-8';
+    const blob=new Blob([data],{type});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a'); a.href=url; a.download=filename; a.rel='noopener';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),30000);
+    out.textContent='Arquivo gerado: '+filename+'. Se não abrir, veja a pasta Downloads do aparelho.';
+  }catch(e){
+    out.className='status err';
+    out.textContent='Não foi possível salvar o arquivo neste navegador.';
+  }
+}
+const safeName = () => ($('cod').value.trim()||'paciente').replace(/[^\w.-]+/g,'_').slice(0,30);
+$('csv').addEventListener('click',()=>{
+  const q=counts();
+  const L=['# codigo,'+$('cod').value.trim(),'# mes,'+$('mes').value.trim(),'# hba1c,'+$('a1c').value.trim(),'# origem,'+source,'# tempo_leitura_s,'+(tReadSec??''),'# celulas_corrigidas,'+(orig?q.mudou:''),'dia,periodo,valor_lido,valor_final,corrigido,duvida_na_leitura'];
+  for(let d=0;d<N;d++) for(let p=0;p<5;p++){
+    const o=orig?orig[d][p]:null, c=cur[d][p];
+    if(o==null&&c==null) continue;
+    L.push([d+1,PERIODS[p],o==null?'':o,c==null?'':c,orig&&o!==c?1:0,dub.has(d+','+p)?1:0].join(','));
+  }
+  saveFile('glicemias_'+safeName()+'.csv','﻿'+L.join('\n'));
+});
+$('htm').addEventListener('click',()=>{
+  const rep=$('report').cloneNode(true);
+  rep.querySelectorAll('.noexport').forEach(e=>e.remove());
+  rep.querySelectorAll('h2 .step').forEach(e=>e.remove());
+  const css=$('css').textContent;
+  const doc='<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Relatório glicêmico '+safeName()+'</title><style>'+css+'</style></head><body><main class="wrap">'+rep.outerHTML+'</main></body></html>';
+  saveFile('relatorio_glicemico_'+safeName()+'.html',doc);
+});
+
+['cod','mes','a1c'].forEach(id=>$(id).addEventListener('input',render));
+render();
+</script>
+
+</body></html>
